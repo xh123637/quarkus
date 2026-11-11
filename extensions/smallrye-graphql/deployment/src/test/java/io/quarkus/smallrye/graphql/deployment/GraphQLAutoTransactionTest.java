@@ -28,7 +28,7 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((JavaArchive jar) -> jar
-                    .addClasses(TransactionCheckApi.class, Greeting.class)
+                    .addClasses(TransactionCheckApi.class, ClassLevelTransactionalApi.class, Greeting.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.nonblocking.enabled=false"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
@@ -111,6 +111,22 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body("data.explicitTransactional", Matchers.is(false));
+    }
+
+    @Test
+    void classLevelTransactionalNeverShouldBeRespected() {
+        String request = getPayload("{ classLevelNeverQuery }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.classLevelNeverQuery", Matchers.is(false));
     }
 
     @Test
@@ -245,6 +261,27 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
             boolean active = isTransactionActive();
             sourceTransactionResults.add(active);
             return active;
+        }
+
+        private boolean isTransactionActive() {
+            try {
+                return tm.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+    }
+
+    @GraphQLApi
+    @jakarta.transaction.Transactional(jakarta.transaction.Transactional.TxType.NEVER)
+    public static class ClassLevelTransactionalApi {
+
+        @Inject
+        TransactionManager tm;
+
+        @Query
+        public boolean classLevelNeverQuery() {
+            return isTransactionActive();
         }
 
         private boolean isTransactionActive() {

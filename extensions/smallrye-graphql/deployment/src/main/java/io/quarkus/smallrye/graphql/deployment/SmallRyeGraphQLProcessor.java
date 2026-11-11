@@ -267,6 +267,10 @@ public class SmallRyeGraphQLProcessor {
                     return;
                 }
 
+                if (method.declaringClass().hasAnnotation(transactional)) {
+                    return;
+                }
+
                 if (method.hasAnnotation(Annotations.NON_BLOCKING)) {
                     return;
                 }
