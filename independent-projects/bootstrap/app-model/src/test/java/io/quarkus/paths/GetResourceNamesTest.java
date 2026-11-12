@@ -57,7 +57,6 @@ public class GetResourceNamesTest {
         var tree2 = PathTree.ofDirectoryOrArchive(dir2);
         var multi = new MultiRootPathTree(tree1, tree2);
         assertThat(multi.getResourceNames()).containsExactlyInAnyOrder(
-                "",
                 "org",
                 "org/acme",
                 "org/acme/Foo.class",
@@ -90,7 +89,6 @@ public class GetResourceNamesTest {
         var tree2 = PathTree.ofDirectoryOrArchive(testJar);
         var multi = new MultiRootPathTree(tree1, tree2);
         assertThat(multi.getResourceNames()).containsExactlyInAnyOrder(
-                "",
                 "org",
                 "org/acme",
                 "org/acme/Foo.class",
@@ -102,11 +100,26 @@ public class GetResourceNamesTest {
     }
 
     @Test
+    public void resourceNamesExcludeTreeRoot() {
+        // https://github.com/quarkusio/quarkus/issues/58329
+        // the empty name identifies the tree root itself and must not be reported as a provided resource,
+        // otherwise QuarkusClassLoader.getResources("") returns the root of every jar on the classpath
+        // instead of only the directory roots, like the default JDK class loaders do
+        assertThat(PathTree.ofDirectoryOrArchive(dir1).getResourceNames()).doesNotContain("");
+        assertThat(PathTree.ofDirectoryOrArchive(testJar).getResourceNames()).doesNotContain("");
+        var multi = new MultiRootPathTree(PathTree.ofDirectoryOrArchive(dir1),
+                PathTree.ofDirectoryOrArchive(testJar));
+        assertThat(multi.getResourceNames()).doesNotContain("");
+    }
+
+    @Test
     public void getResourceNamesMatchesWalk() {
         var tree = PathTree.ofDirectoryOrArchive(dir1);
         var resourceNames = tree.getResourceNames();
         var walkNames = new java.util.HashSet<String>();
         tree.walk(visit -> walkNames.add(visit.getResourceName()));
+        // the walk visits the tree root itself, but the root ("") is not a resource name
+        walkNames.remove("");
         assertThat(resourceNames).containsExactlyInAnyOrderElementsOf(walkNames);
     }
 }

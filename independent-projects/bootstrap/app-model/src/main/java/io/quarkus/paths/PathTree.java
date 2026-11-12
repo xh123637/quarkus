@@ -121,12 +121,19 @@ public interface PathTree {
     /**
      * Returns a set of resource names provided by this path tree.
      * The set may include both directories and files.
+     * The empty name identifying the tree root itself is not included,
+     * so that a tree never claims to provide the resource {@code ""}.
      *
      * @return a set of resource names provided by this path tree
      */
     default Set<String> getResourceNames() {
         Set<String> names = new HashSet<>();
-        walk(visit -> names.add(visit.getResourceName()));
+        walk(visit -> {
+            final String resourceName = visit.getResourceName();
+            if (!resourceName.isEmpty()) {
+                names.add(resourceName);
+            }
+        });
         return names;
     }
 

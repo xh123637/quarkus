@@ -10,7 +10,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -172,7 +174,7 @@ public class DirectoryPathTreeTest {
     public void getResourceNames() {
         final Path root = resolveTreeRoot("root");
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
-        assertThat(tree.getResourceNames()).containsExactlyInAnyOrderElementsOf(getRawPaths().keySet());
+        assertThat(tree.getResourceNames()).containsExactlyInAnyOrderElementsOf(getExpectedResourceNames(getRawPaths()));
     }
 
     @Test
@@ -180,7 +182,17 @@ public class DirectoryPathTreeTest {
         final Path root = resolveTreeRoot("root");
         final PathTree tree = new DirectoryPathTree(root, null, true);
         assertThat(tree.getResourceNames())
-                .containsExactlyInAnyOrderElementsOf(getMultiReleaseMappedPaths().keySet());
+                .containsExactlyInAnyOrderElementsOf(getExpectedResourceNames(getMultiReleaseMappedPaths()));
+    }
+
+    /**
+     * The expected set of resource names: every visited path except the tree root itself,
+     * whose empty name is not a resource name.
+     */
+    static Set<String> getExpectedResourceNames(Map<String, String> visitedPaths) {
+        final Set<String> expected = new HashSet<>(visitedPaths.keySet());
+        expected.remove("");
+        return expected;
     }
 
     @Test

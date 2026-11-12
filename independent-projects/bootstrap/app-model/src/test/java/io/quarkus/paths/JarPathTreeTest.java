@@ -140,7 +140,9 @@ public class JarPathTreeTest {
     public void getResourceNames() {
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
         assertThat(tree.getResourceNames())
-                .containsExactlyInAnyOrderElementsOf(DirectoryPathTreeTest.getMultiReleaseMappedPaths().keySet());
+                .containsExactlyInAnyOrderElementsOf(
+                        DirectoryPathTreeTest.getExpectedResourceNames(
+                                DirectoryPathTreeTest.getMultiReleaseMappedPaths()));
     }
 
     @Test
